@@ -11,19 +11,19 @@ import (
 //generate JWT token
 //generate Refresh Token
 
-func GenerateToken(userID int64, role, email string, publicID uuid.UUID) {
+func GenerateToken(userID int64, role, email string, publicID uuid.UUID) (string, error) {
 	secret := config.AppConfig.JWTSecret
 	duration, _ := time.ParseDuration(config.AppConfig.JWTExpire)
 
-	claims := JWT.MapClaims{
+	claims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
 		"email":   email,
-		"pub_id":  publicID,
+		"pub_id":  publicID.String(),
 		"exp":     time.Now().Add(duration).Unix(),
 	}
 
-	token := JWT.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 
 }

@@ -34,12 +34,12 @@ func LoadEnv() {
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
-	AppConfig = &config{
+	AppConfig = &Config{
 		AppPort:         getEnv("PORT", "3030"),
 		DBHost:          getEnv("DB_HOST", "localhost"),
 		DBPort:          getEnv("DB_PORT", "5432"),
 		DBUser:          getEnv("DB_USER", "postgres"),
-		DBPassword:      getEnv("DB_PASSWORD", "123"),
+		DBPassword:      getEnv("DB_PASSWORD", "121212"),
 		DBName:          getEnv("DB_NAME", "project_management"),
 		JWTSecret:       getEnv("JWT_SECRET", "rahasia"),
 		JWTRefreshToken: getEnv("JWT_REFRESH_TOKEN", "24h"),
