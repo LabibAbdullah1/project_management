@@ -16,7 +16,6 @@ func (a *UUIDArray) Scan(value interface{}) error {
 	var str string
 
 	switch v := value.(type) {
-
 	case []byte:
 		str = string(v)
 	case string:
