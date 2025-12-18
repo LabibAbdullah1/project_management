@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 )
 
@@ -17,4 +18,14 @@ type User struct {
 	CreatedAt  time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at" db:"updated-at"`
 	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+type UseResponse struct {
+	PublicID  uuid.UUID      `json:"public_id" `
+	Name      string         `json:"name" `
+	Email     string         `json:"email" `
+	Role      string         `json:"role" `
+	CreatedAt time.Time      `json:"created_at" `
+	UpdatedAt time.Time      `json:"updated_at" `
+	DeletedAt gorm.DeletedAt `json:"-"`
 }
