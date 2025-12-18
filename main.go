@@ -3,7 +3,6 @@ package main
 import (
 	"ProjectManagement/config"
 	"ProjectManagement/controllers"
-	"ProjectManagement/database/seed"
 	"ProjectManagement/repositories"
 	"ProjectManagement/routes"
 	"ProjectManagement/services"
@@ -17,7 +16,6 @@ func main() {
 	config.LoadEnv()
 	config.ConnectDB()
 
-	seed.SeedAdmin()
 	app := fiber.New()
 
 	userRepo := repositories.NewUserRepository()

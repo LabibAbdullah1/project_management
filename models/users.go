@@ -20,7 +20,7 @@ type User struct {
 	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-type UseResponse struct {
+type UserResponse struct {
 	PublicID  uuid.UUID      `json:"public_id" `
 	Name      string         `json:"name" `
 	Email     string         `json:"email" `

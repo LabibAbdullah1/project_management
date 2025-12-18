@@ -19,7 +19,7 @@ type UserService interface {
 	Delete(id uint) error
 }
 
-type userService struct {
+type userService struct { 
 	repo repositories.UserRepository
 }
 
