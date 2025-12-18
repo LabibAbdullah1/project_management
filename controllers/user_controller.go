@@ -7,9 +7,9 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/jinzhu/copier"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
 )
 
 type UserController struct {
@@ -101,4 +101,34 @@ func (c *UserController) GetUsersPageination(ctx *fiber.Ctx) error {
 		return utils.NotFoundPageination(ctx, "Data not Found", userResp, meta)
 	}
 	return utils.SuccessPageination(ctx, "Users retrieved successfully", userResp, meta)
+}
+
+func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	publicID, err := uuid.Parse(id)
+	if err != nil {
+		return utils.BadRequest(ctx, "Invalid User ID Format", err.Error())
+	}
+
+	var user models.User
+	if err := ctx.BodyParser(&user); err != nil {
+		return utils.BadRequest(ctx, "Failed to parse request body", err.Error())
+	}
+	user.PublicID = publicID
+
+	if err := c.service.Update(&user); err != nil {
+		return utils.BadRequest(ctx, "Failed to update user", err.Error())
+	}
+
+	userUpdated, err := c.service.GetByPublicID(id)
+	if err != nil {
+		return utils.InternalServerError(ctx, "Failed to retrieve updated user", err.Error())
+	}
+
+	var UserResp models.UserResponse
+	err = copier.Copy(&UserResp, &userUpdated)
+	if err != nil {
+		return utils.InternalServerError(ctx, "Error Parsing Data", err.Error())
+	}
+	return utils.Success(ctx, "User updated successfully", UserResp)
 }
