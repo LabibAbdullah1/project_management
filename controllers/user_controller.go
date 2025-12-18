@@ -132,3 +132,11 @@ func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 	}
 	return utils.Success(ctx, "User updated successfully", UserResp)
 }
+
+func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	if err := c.service.Delete(uint(id)); err != nil {
+		return utils.InternalServerError(ctx, "Failed to delete user", err.Error())
+	}
+	return utils.Success(ctx, "User deleted successfully", nil)
+}
