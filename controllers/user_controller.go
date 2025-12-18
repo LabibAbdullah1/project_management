@@ -4,6 +4,8 @@ import (
 	"ProjectManagement/models"
 	"ProjectManagement/services"
 	"ProjectManagement/utils"
+	"math"
+	"strconv"
 
 	"github.com/jinzhu/copier"
 
@@ -64,9 +66,39 @@ func (c *UserController) GetUser(ctx *fiber.Ctx) error {
 		return utils.NotFound(ctx, "User not found", err.Error())
 	}
 	var UserResp models.UserResponse
-	_ = copier.Copy(&UserResp, &user)
+	err = copier.Copy(&UserResp, &user)
 	if err != nil {
 		return utils.BadRequest(ctx, "internal Server Error", err.Error())
 	}
 	return utils.Success(ctx, "User retrieved successfully", UserResp)
+}
+
+func (c *UserController) GetUsersPageination(ctx *fiber.Ctx) error {
+	page, _ := strconv.Atoi(ctx.Query("page", "1"))
+	limit, _ := strconv.Atoi(ctx.Query("limit", "10"))
+	ofset := (page - 1) * limit
+
+	filter := ctx.Query("filter", "")
+	sort := ctx.Query("sort", "created_at desc")
+
+	users, total, err := c.service.GetAllPagination(filter, sort, limit, ofset)
+	if err != nil {
+		return utils.BadRequest(ctx, "internal Server Error", err.Error())
+	}
+	var userResp []models.UserResponse
+	_ = copier.Copy(&userResp, &users)
+
+	meta := utils.PageinationMeta{
+		Page:      page,
+		Limit:     limit,
+		Total:     int(total),
+		TotalPage: int(math.Ceil(float64(total) / float64(limit))),
+		Filter:    filter,
+		Sort:      sort,
+	}
+
+	if total == 0 {
+		return utils.NotFoundPageination(ctx, "Data not Found", userResp, meta)
+	}
+	return utils.SuccessPageination(ctx, "Users retrieved successfully", userResp, meta)
 }
