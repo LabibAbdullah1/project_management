@@ -18,11 +18,17 @@ func main() {
 
 	app := fiber.New()
 
+	// User
 	userRepo := repositories.NewUserRepository()
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	routes.Setup(app, userController)
+	// board
+	boardRepo := repositories.NewBoardRepository()
+	boardService := services.NewBoardService(boardRepo, userRepo)
+	boardController := controllers.NewBoardController(boardService)
+
+	routes.Setup(app, userController, boardController)
 	port := config.AppConfig.AppPort
 	log.Println("server is running at :", port)
 	log.Fatal(app.Listen(":" + port))
