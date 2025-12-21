@@ -64,9 +64,10 @@ func (r *userRepository) FindAllPagination(filter, sort string, limit, ofset int
 	//sorting
 	if sort != "" {
 		//Misalnya sort=name (ASC ascending ) sort =-name (DESC descending)
-		if sort == "-id" {
+		switch sort {
+		case "-id":
 			sort = "-internal_id"
-		} else if sort == "id" {
+		case "id":
 			sort = "internal_id"
 		}
 
