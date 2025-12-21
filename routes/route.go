@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, 
+func Setup(app *fiber.App,
 	uc *controllers.UserController,
 	bc *controllers.BoardController) {
 	err := godotenv.Load()
@@ -25,8 +25,8 @@ func Setup(app *fiber.App,
 	api := app.Group("/api/v1", jwtware.New(jwtware.Config{
 		SigningKey: []byte(config.AppConfig.JWTSecret),
 		ContextKey: "user",
-		ErrorHandler: func(c *fiber.Ctx, err error) error{
-			return utils.Unauthorized(c,"Error Unauthorized", err.Error())
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return utils.Unauthorized(c, "Error Unauthorized", err.Error())
 		},
 	}))
 
@@ -38,4 +38,6 @@ func Setup(app *fiber.App,
 
 	boardGroup := api.Group("/boards")
 	boardGroup.Post("/", bc.CreateBoard)
+	boardGroup.Put("/:id", bc.UpdateBoard)
+	boardGroup.Post("/:id/members", bc.AddBoardMembers)
 }

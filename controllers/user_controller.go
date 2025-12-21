@@ -140,3 +140,4 @@ func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
 	}
 	return utils.Success(ctx, "User deleted successfully", nil)
 }
+
