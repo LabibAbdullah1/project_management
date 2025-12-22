@@ -4,6 +4,8 @@ import (
 	"ProjectManagement/models"
 	"ProjectManagement/services"
 	"ProjectManagement/utils"
+	"math"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -44,7 +46,7 @@ func (c *BoardController) CreateBoard(ctx *fiber.Ctx) error {
 
 func (c *BoardController) UpdateBoard(ctx *fiber.Ctx) error {
 	publicID := ctx.Params("id")
-	board := new (models.Board)
+	board := new(models.Board)
 
 	if err := ctx.BodyParser(board); err != nil {
 		return utils.BadRequest(ctx, "Parse is Failed", err.Error())
@@ -77,7 +79,7 @@ func (c *BoardController) AddBoardMembers(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&userIDs); err != nil {
 		return utils.BadRequest(ctx, "Parse is Failed", err.Error())
 	}
-	if err := c.service.AddMember(publicID,userIDs); err != nil {
+	if err := c.service.AddMember(publicID, userIDs); err != nil {
 		return utils.BadRequest(ctx, "Failed To Add Members", err.Error())
 	}
 	return utils.Success(ctx, "Add Member Succesfully", nil)
@@ -90,8 +92,35 @@ func (c *BoardController) RemoveBoardMembers(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&userIDs); err != nil {
 		return utils.BadRequest(ctx, "Parse is Failed", err.Error())
 	}
-	if err := c.service.RemoveMembers(publicID,userIDs); err != nil {
+	if err := c.service.RemoveMembers(publicID, userIDs); err != nil {
 		return utils.BadRequest(ctx, "Failed To Remove Members", err.Error())
 	}
 	return utils.Success(ctx, "Remove Member Succesfully", nil)
+}
+
+func (c *BoardController) GetMyBoardPageinate(ctx *fiber.Ctx) error {
+	user := ctx.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	userID := claims["pub_id"].(string)
+
+	page, _ := strconv.Atoi(ctx.Query("page", "1"))
+	limit, _ := strconv.Atoi(ctx.Query("limit", "10"))
+	offset := (page - 1) * limit
+
+	filter := ctx.Query("filter", "")
+	sort := ctx.Query("sort", "")
+
+	boards, total, err := c.service.GetAllUserPageinate(userID, filter, sort, limit, offset)
+	if err != nil {
+		return utils.InternalServerError(ctx, "Get Data to Board is Failed", err.Error())
+	}
+	meta := utils.PageinationMeta{
+		Page:      page,
+		Limit:     limit,
+		Total:     int(total),
+		TotalPage: int(math.Ceil(float64(total) / float64(limit))),
+		Filter:    filter,
+		Sort:      sort,
+	}
+	return utils.SuccessPageination(ctx, "Get data board Succesfully", boards, meta)
 }

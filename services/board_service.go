@@ -11,22 +11,23 @@ import (
 type BoardService interface {
 	Create(board *models.Board) error
 	Update(board *models.Board) error
-	GetByPublicID(publicID string)(*models.Board, error)
+	GetByPublicID(publicID string) (*models.Board, error)
 	AddMember(boardPublicID string, userPublicIDS []string) error
-	RemoveMembers(boardPublicID string, userPublicIDs [] string) error
+	RemoveMembers(boardPublicID string, userPublicIDs []string) error
+	GetAllUserPageinate(userID, filter, sort string, limit, offset int) ([]models.Board, int64, error)
 }
 
 type boardService struct {
-	boardRepo repositories.BoardRepository
-	userRepo  repositories.UserRepository
+	boardRepo       repositories.BoardRepository
+	userRepo        repositories.UserRepository
 	boardMemberRepo repositories.BoardMemberRepository
 }
 
 func NewBoardService(
-	boardRepo repositories.BoardRepository, 
+	boardRepo repositories.BoardRepository,
 	userRepo repositories.UserRepository,
 	boardMemberRepo repositories.BoardMemberRepository,
-	) BoardService {
+) BoardService {
 	return &boardService{boardRepo, userRepo, boardMemberRepo}
 }
 func (s *boardService) Create(board *models.Board) error {
@@ -42,7 +43,7 @@ func (s *boardService) Create(board *models.Board) error {
 func (s *boardService) Update(board *models.Board) error {
 	return s.boardRepo.Update(board)
 }
-func (s *boardService) GetByPublicID(publicID string)(*models.Board, error){
+func (s *boardService) GetByPublicID(publicID string) (*models.Board, error) {
 	return s.boardRepo.FindByPublicID(publicID)
 }
 func (s *boardService) AddMember(boardPublicID string, userPublicIDS []string) error {
@@ -52,7 +53,7 @@ func (s *boardService) AddMember(boardPublicID string, userPublicIDS []string) e
 	}
 
 	var userInternalIDs []uint
-	for _, userPublicID := range userPublicIDS{
+	for _, userPublicID := range userPublicIDS {
 		user, err := s.userRepo.FindByPublicID(userPublicID)
 		if err != nil {
 			return errors.New("User Not Found" + userPublicID)
@@ -60,30 +61,30 @@ func (s *boardService) AddMember(boardPublicID string, userPublicIDS []string) e
 		userInternalIDs = append(userInternalIDs, uint(user.InternalID))
 	}
 	// cek ke anggotaan
-	existingMember, err :=	s.boardMemberRepo.GetMember(string(board.PublicID.String()))
+	existingMember, err := s.boardMemberRepo.GetMember(string(board.PublicID.String()))
 	if err != nil {
 		return err
 	}
 
 	// cek menggunakan map
 	memberMap := make(map[uint]bool)
-	for _, member := range existingMember{
+	for _, member := range existingMember {
 		memberMap[uint(member.InternalID)] = true
 	}
 
 	var newMemberIDs []uint
-	for _,userID := range userInternalIDs {
-		if !memberMap[userID]{
+	for _, userID := range userInternalIDs {
+		if !memberMap[userID] {
 			newMemberIDs = append(newMemberIDs, userID)
 		}
 	}
-	if len (newMemberIDs) == 0 {
+	if len(newMemberIDs) == 0 {
 		return nil
 	}
 	return s.boardRepo.AddMember(uint(board.InternalID), newMemberIDs)
 }
 
-func (s *boardService) RemoveMembers(boardPublicID string, userPublicIDs [] string) error {
+func (s *boardService) RemoveMembers(boardPublicID string, userPublicIDs []string) error {
 	board, err := s.boardRepo.FindByPublicID(boardPublicID)
 	if err != nil {
 		return errors.New("Board is Not Found")
@@ -91,7 +92,7 @@ func (s *boardService) RemoveMembers(boardPublicID string, userPublicIDs [] stri
 
 	//validasi user
 	var userInternalIDs []uint
-	for _, userPublicID := range userPublicIDs{
+	for _, userPublicID := range userPublicIDs {
 		user, err := s.userRepo.FindByPublicID(userPublicID)
 		if err != nil {
 			return errors.New("User Not Found" + userPublicID)
@@ -100,14 +101,14 @@ func (s *boardService) RemoveMembers(boardPublicID string, userPublicIDs [] stri
 	}
 
 	//cek keanggotaan
-	existingMember, err :=	s.boardMemberRepo.GetMember(string(board.PublicID.String()))
+	existingMember, err := s.boardMemberRepo.GetMember(string(board.PublicID.String()))
 	if err != nil {
 		return err
 	}
 
 	// cek menggunakan map
 	memberMap := make(map[uint]bool)
-	for _, member := range existingMember{
+	for _, member := range existingMember {
 		memberMap[uint(member.InternalID)] = true
 	}
 
@@ -118,4 +119,8 @@ func (s *boardService) RemoveMembers(boardPublicID string, userPublicIDs [] stri
 		}
 	}
 	return s.boardRepo.RemoveMembers(uint(board.InternalID), membersToRemove)
+}
+
+func (s *boardService) GetAllUserPageinate(userID, filter, sort string, limit, offset int) ([]models.Board, int64, error) {
+	return s.boardRepo.FindAllByUserPaginate(userID, filter, sort, limit, offset)
 }
