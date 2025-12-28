@@ -3,12 +3,14 @@ package services
 import (
 	"ProjectManagement/models"
 	"ProjectManagement/repositories"
+	"ProjectManagement/utils"
+	"errors"
 
 	"github.com/google/uuid"
 )
 
 type ListService interface {
-	GetByBoardID(board_public_id string) (*listWithOrder, error)
+	GetByBoardID(board_public_id string) (*ListWithOrder, error)
 	GetByID(id uint) (*models.List, error)
 	GetByPublicID(publicID string) (*models.List, error)
 	Create(list *models.List) error
@@ -28,17 +30,38 @@ func NewListService(
 	boardRepo repositories.BoardRepository,
 	listPosRepo repositories.ListPositionRepository,
 ) ListService {
-	return &listService{ listRepo, boardRepo, listPosRepo }
+	return &listService{listRepo, boardRepo, listPosRepo}
 }
 
-type listWithOrder struct {
+type ListWithOrder struct {
 	Position []uuid.UUID
 	Lists    []models.List
 }
 
-func (s *listService) GetByBoardID(board_public_id string) (*listWithOrder, error) {
+func (s *listService) GetByBoardID(boardPublicID string) (*ListWithOrder, error) {
 	// TODO: implement GetByBoardID
-	return nil, nil
+	_, err := s.boardRepo.FindByPublicID(boardPublicID)
+	if err != nil {
+		return nil, errors.New("Board Not Found")
+	}
+
+	position, err := s.listPosRepo.GetListOrder(boardPublicID)
+	if err != nil {
+		return nil, errors.New("Failed To Get list order :" + err.Error())
+	}
+
+	lists, err := s.listRepo.FindByBoardID(boardPublicID)
+	if err != nil {
+		return nil, errors.New("Failed To Get List :" + err.Error())
+	}
+
+	// sorting by position
+	orderedList := utils.SortingListByPosition(lists, position)
+
+	return &ListWithOrder{
+		Position: position,
+		Lists:    orderedList,
+	}, nil
 }
 
 func (s *listService) GetByID(id uint) (*models.List, error) {
