@@ -1,12 +1,16 @@
 package services
 
 import (
+	"ProjectManagement/config"
 	"ProjectManagement/models"
+	"ProjectManagement/models/types"
 	"ProjectManagement/repositories"
 	"ProjectManagement/utils"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ListService interface {
@@ -65,17 +69,73 @@ func (s *listService) GetByBoardID(boardPublicID string) (*ListWithOrder, error)
 }
 
 func (s *listService) GetByID(id uint) (*models.List, error) {
-	// TODO: implement GetByID
-	return nil, nil
+	return s.listRepo.FindByID(id)
 }
 
 func (s *listService) GetByPublicID(publicID string) (*models.List, error) {
-	// TODO: implement GetByPublicID
-	return nil, nil
+	return s.listRepo.FindByPublicID(publicID)
 }
 
 func (s *listService) Create(list *models.List) error {
-	// TODO: implement Create
+	// validasi board
+	board, err := s.boardRepo.FindByPublicID(list.BoardPublicID.String())
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("Board not Found ")
+		}
+		return fmt.Errorf("Failed to Get Board :%w", err)
+	}
+	list.BoardInternalID = board.InternalID
+
+	if list.PublicID == uuid.Nil {
+		list.PublicID = uuid.New()
+	}
+
+	tx := config.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// simpan list baru
+	if err := tx.Create(list).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Failed To Create Lsit : %w", err)
+	}
+
+	// update position
+	var position models.ListPosition
+
+	res := tx.Where("board_internal_id = ?", board.InternalID).First(&position)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		// buatbaru jika belum ada
+		position = models.ListPosition{
+			PublicID:  uuid.New(),
+			BoardID:   board.InternalID,
+			ListOrder: types.UUIDArray{list.PublicID},
+		}
+		if err := tx.Create(&position).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("Failed to create list position : %w", err)
+		}
+	} else if res.Error != nil {
+		tx.Rollback()
+		return fmt.Errorf("Failed to create list position : %w", res.Error)
+	} else {
+		// tambahkan ID baru
+		position.ListOrder = append(position.ListOrder, list.PublicID)
+		if err := tx.Model(&position).Update("list_order", position.ListOrder).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("Failed to update list position : %w", err)
+		}
+	}
+
+	// commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("Transaction Commit Failed %w", err)
+	}
+
 	return nil
 }
 
