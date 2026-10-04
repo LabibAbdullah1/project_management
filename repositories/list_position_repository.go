@@ -17,7 +17,7 @@ type ListPositionRepository interface {
 	UpdateListOrder(position *models.ListPosition) error
 }
 
-func NewListPositionrepository() ListPositionRepository {
+func NewListPositionRepository() ListPositionRepository {
 	return &listPositionRepository{}
 }
 
@@ -32,8 +32,8 @@ func (r *listPositionRepository) GetByBoard(boardPublicID string) (*models.ListP
 func (r *listPositionRepository) CreateOrUpdate(boardPublicID string, listorder []uuid.UUID) error {
 	return config.DB.Exec(`
 	INSERT INTO list_position (board_internal_id , list_order)
-	SELECT internal_id, ? FROM board where public_id = ? 
-	ON CONFLICT (board_internal_id) 
+	SELECT internal_id, ? FROM board where public_id = ?
+	ON CONFLICT (board_internal_id)
 	DO UPDATE SET list-order = EXCLUDE.list_order`, listorder, boardPublicID).Error
 }
 

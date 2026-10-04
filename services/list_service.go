@@ -20,7 +20,7 @@ type ListService interface {
 	Create(list *models.List) error
 	Update(list *models.List) error
 	Delete(id uint) error
-	UpdatePosition(boardPublicID string, position []uuid.UUID) error
+	UpdatePosition(boardPublicID string, positions []uuid.UUID) error
 }
 
 type listService struct {
@@ -140,16 +140,22 @@ func (s *listService) Create(list *models.List) error {
 }
 
 func (s *listService) Update(list *models.List) error {
-	// TODO: implement Update
-	return nil
+	return s.listRepo.Update(list)
 }
 
 func (s *listService) Delete(id uint) error {
-	// TODO: implement Delete
-	return nil
+	return s.listRepo.Delete(id)
 }
 
-func (s *listService) UpdatePosition(boardPublicID string, position []uuid.UUID) error {
-	// TODO: implement UpdatePosition
-	return nil
+func (s *listService) UpdatePosition(boardPublicID string, positions []uuid.UUID) error {
+	board, err := s.boardRepo.FindByPublicID(boardPublicID)
+	if err != nil {
+		return errors.New("Board not Found ")
+	}
+	position, err := s.listPosRepo.GetByBoard(board.PublicID.String())
+	if err != nil {
+		return errors.New("List Position not Found ")
+	}
+	position.ListOrder = types.UUIDArray(positions)
+	return s.listPosRepo.UpdateListOrder(position)
 }
